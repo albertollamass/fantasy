@@ -4,7 +4,7 @@ import {
   syncMarketOnly, cleanupMarket, getCachedMarket, fetchMarketSnapshot,
   getFinance, saveFinance, getLineup, saveLineup,
   FORMATIONS, parseFormation,
-  exportForAI, exportMarketForAI, fmtM, emptyPlayer, isCloud
+  exportForAI, fmtM, emptyPlayer, isCloud
 } from './services/store';
 import { FantasyAPI } from './services/fantasyApi';
 import './styles.css';
@@ -259,14 +259,6 @@ export default function App() {
     navigator.clipboard?.writeText(t).then(() => setMsg('Resumen copiado para tu IA')).catch(() => setMsg('Texto generado abajo, copialo a mano'));
   }
 
-  function copyMarketAI() {
-    const src = market.length ? market : players;
-    if (!src.length) { setMsg('No hay mercado: sincroniza primero.'); return; }
-    const t = exportMarketForAI(src, marketInfo?.week || '');
-    setAiText(t);
-    navigator.clipboard?.writeText(t).then(() => setMsg(`Mercado copiado: ${src.length} jugadores para tu IA`)).catch(() => setMsg('Texto generado abajo, copialo a mano'));
-  }
-
 
 
   return (
@@ -282,7 +274,6 @@ export default function App() {
           <div className="acciones">
             <button onClick={handleSync} disabled={syncing}>{syncing ? 'Sincronizando…' : 'Sincronizar mercado'}</button>
             <button className="ghost" onClick={copyAI}>Copiar equipo para IA</button>
-            <button className="ghost" onClick={copyMarketAI}>Copiar mercado para IA</button>
           </div>
         </div>
         <div className="cifras">
