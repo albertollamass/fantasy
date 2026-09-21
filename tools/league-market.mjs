@@ -106,6 +106,7 @@ const listings = market.map((m) => {
     teamId: pm.teamId ?? null,
     price: Number(pm.marketValue ?? 0),
     points: Number(pm.points ?? 0),
+    photo: pm.image || pm.photoUrl || null,
     salePrice: Number(m.salePrice ?? 0),
     bids: Number(m.numberOfBids ?? 0),
     expires: m.expirationDate || '',

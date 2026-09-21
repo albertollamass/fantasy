@@ -122,6 +122,19 @@ export default function App() {
   const buyingPower = (Number(finance.cash) || 0) + debtLimit;
   const cashNum = Number(finance.cash) || 0;
 
+  const photoByExt = useMemo(() => {
+    const map = {};
+    const grab = (list) => {
+      for (const p of list || []) {
+        if (p && p.externalId && p.photo) map[String(p.externalId)] = p.photo;
+      }
+    };
+    grab(market);
+    grab(players);
+    return map;
+  }, [market, players]);
+  const photoOf = (p) => (p && (p.photo || photoByExt[String(p.externalId)])) || null;
+
   const analysis = useMemo(() => {
     const withTrend = explore.map((p) => ({ p, trend: trendOf(p), ppm: ppm(p) }));
     return {
@@ -257,6 +270,36 @@ export default function App() {
     navigator.clipboard?.writeText(t).then(() => setMsg(`Mercado copiado: ${src.length} jugadores para tu IA`)).catch(() => setMsg('Texto generado abajo, copialo a mano'));
   }
 
+  function copyLeagueAI() {
+    if (!league?.listings?.length) { setMsg('Pega primero el mercado de tu liga.'); return; }
+    const t = exportLeagueForAI(league.listings, league.leagueName);
+    setAiText(t);
+    navigator.clipboard?.writeText(t).then(() => setMsg(`Mercado de liga copiado: ${league.listings.length} lotes`)).catch(() => setMsg('Texto generado abajo, copialo a mano'));
+  }
+
+  function loadLeague() {
+    try {
+      const data = JSON.parse(leagueText);
+      const rawList = Array.isArray(data) ? data : data.listings || [];
+      const listings = rawList.map((l, i) => ({
+        marketId: String(l.marketId ?? l.id ?? l.externalId ?? i),
+        name: l.name || '?',
+        position: l.position || '?',
+        team: l.team || '',
+        price: Number(l.price) || 0,
+        points: Number(l.points ?? l.pointsTotal) || 0,
+        salePrice: Number(l.salePrice) || 0,
+        bids: Number(l.bids) || 0,
+        expires: l.expires || '',
+        seller: l.seller || '',
+        photo: l.photo || null
+      }));
+      if (!listings.length) { setMsg('JSON vacio o sin lotes.'); return; }
+      setLeague({ leagueName: data.leagueName || '', updatedAt: data.updatedAt || '', listings });
+      setMsg(`Mercado de liga cargado: ${listings.length} lotes. Solo en memoria: nada va a Firestore y nada puja.`);
+    } catch (e) { setMsg('JSON invalido: ' + e.message); }
+  }
+
   return (
     <div className="app">
       <header className="marcador">
@@ -294,6 +337,7 @@ export default function App() {
           <button key={t.id} className={tab === t.id ? 'active' : ''} onClick={() => setTab(t.id)}>{t.label}</button>
         ))}
       </nav>
+      <TabError key={tab}>
 
       {tab === 'equipo' && (
         <>
@@ -313,10 +357,10 @@ export default function App() {
               </select>
             </div>
             <div className="campo">
-              <PitchRow label="DEL" slots={slotsFor('DEL', shape.del)} onPick={handleSwapClick} pickedId={swapPick} />
-              <PitchRow label="MED" slots={slotsFor('MED', shape.med)} onPick={handleSwapClick} pickedId={swapPick} />
-              <PitchRow label="DEF" slots={slotsFor('DEF', shape.def)} onPick={handleSwapClick} pickedId={swapPick} />
-              <PitchRow label="POR" slots={slotsFor('POR', 1)} onPick={handleSwapClick} pickedId={swapPick} />
+              <PitchRow label="DEL" slots={slotsFor('DEL', shape.del)} onPick={handleSwapClick} pickedId={swapPick} photoOf={photoOf} />
+              <PitchRow label="MED" slots={slotsFor('MED', shape.med)} onPick={handleSwapClick} pickedId={swapPick} photoOf={photoOf} />
+              <PitchRow label="DEF" slots={slotsFor('DEF', shape.def)} onPick={handleSwapClick} pickedId={swapPick} photoOf={photoOf} />
+              <PitchRow label="POR" slots={slotsFor('POR', 1)} onPick={handleSwapClick} pickedId={swapPick} photoOf={photoOf} />
             </div>
             <div className="banquillo">
               <h3>Banquillo</h3>
@@ -324,6 +368,7 @@ export default function App() {
                 {bench.length === 0 && <span className="aviso">Banquillo vacio.</span>}
                 {bench.map((p) => (
                   <button key={p.id} type="button" className={'mini' + (swapPick === p.id ? ' elegido' : '')} onClick={() => handleSwapClick(p)}>
+                    <Avatar src={photoOf(p)} name={p.name} />
                     <strong>{p.name} ({p.position})</strong>
                     <span>{p.pointsTotal ?? 0} pts, {fmtM(p.price)}</span>
                   </button>
@@ -335,33 +380,14 @@ export default function App() {
             <h2>Mi equipo completo</h2>
             {POSITIONS.map((pos) => {
               const line = [...starters.filter((p) => p.position === pos), ...bench.filter((p) => p.position === pos)];
-  function copyLeagueAI() {
-    if (!league?.listings?.length) { setMsg('Pega primero el mercado de tu liga.'); return; }
-    const t = exportLeagueForAI(league.listings, league.leagueName);
-    setAiText(t);
-    navigator.clipboard?.writeText(t).then(() => setMsg(`Mercado de liga copiado: ${league.listings.length} lotes`)).catch(() => setMsg('Texto generado abajo, copialo a mano'));
-  }
-
-  function loadLeague() {
-    try {
-      const data = JSON.parse(leagueText);
-      const listings = Array.isArray(data) ? data : data.listings || [];
-      if (!listings.length) { setMsg('JSON vacio o sin lotes.'); return; }
-      setLeague({ leagueName: data.leagueName || '', updatedAt: data.updatedAt || '', listings });
-      setMsg(`Mercado de liga cargado: ${listings.length} lotes. Solo en memoria: nada va a Firestore y nada puja.`);
-    } catch (e) { setMsg('JSON invalido: ' + e.message); }
-  }
-
-  return (
+              return (
                 <div key={pos} className="linea">
                   <h3>{pos}</h3>
                   {line.map((p) => (
                     <div key={p.id}>
                       <div className="ficha">
-                        <span>
-                          <span className="nombre">{p.name}</span>
-                          <span className="equipo"> {p.team || ''}</span>
-                          <span className="rol">{p.isStarter ? 'Titular' : 'Banquillo'}</span>
+                        <span className="quien"><Avatar src={photoOf(p)} name={p.name} /><span className="txt"><span className="nombre">{p.name}</span> <span className="equipo"> {p.team || ''}</span>
+                          <span className="rol">{p.isStarter ? 'Titular' : 'Banquillo'}</span></span>
                         </span>
                         <span><DiffBadge p={p} /> <span className="precio">{fmtM(p.price)}</span></span>
                       </div>
@@ -409,7 +435,7 @@ export default function App() {
           <p className="aviso"><button className="ghost sm" onClick={handleCleanup}>Liberar Firestore, dejar solo mi equipo</button></p>
           <div className="ticker">
             {paged.map((p) => (
-              <TickerRow key={p.externalId || p.id} p={p} onToggleSquad={() => toggleSquad(p, 'inSquad')} />
+              <TickerRow key={p.externalId || p.id} p={p} onToggleSquad={() => toggleSquad(p, 'inSquad')} photoOf={photoOf} />
             ))}
           </div>
           <div className="pager">
@@ -455,14 +481,15 @@ export default function App() {
           </div>
           {league && <p className="aviso">{league.leagueName} · {league.listings.length} lotes · {String(league.updatedAt).slice(0, 16).replace('T', ' ')}</p>}
           {league && league.listings.map((l) => (
-            <div key={l.marketId} className="row">
-              <span><strong>{l.name}</strong> <span className="muted">({l.position}, vende {l.seller})</span></span>
-              <span>{fmtM(l.price)} · {l.bids} pujas · {String(l.expires).slice(5, 16).replace('T', ' ')}</span>
+            <div key={l.marketId} className="row row-liga">
+              <span className="quien"><Avatar src={l.photo} name={l.name} /><span className="txt"><strong>{l.name}</strong> <span className="muted">({l.position}, vende {l.seller})</span></span>
+              </span><span>{fmtM(l.price)} · {l.bids} pujas · {String(l.expires).slice(5, 16).replace('T', ' ')}</span>
             </div>
           ))}
         </section>
       )}
 
+      </TabError>
       {aiText && (
         <section>
           <h3>Texto para la IA</h3>
@@ -483,6 +510,7 @@ export default function App() {
               )}
               {popupCandidates().map((c) => (
                 <button key={c.id} type="button" className="popup-opcion" onClick={() => handleSwapPick(c)}>
+                  <Avatar src={photoOf(c)} name={c.name} />
                   <strong>{c.name}</strong>
                   <span>{c.team}, {fmtM(c.price)}, {c.pointsTotal ?? 0} pts</span>
                 </button>
@@ -497,12 +525,38 @@ export default function App() {
   );
 }
 
-function PitchRow({ label, slots, onPick, pickedId }) {
+function Avatar({ src, name }) {
+  const [ko, setKo] = useState(false);
+  if (!src || ko) return null;
+  return <img className="avatar" src={src} alt={name} loading="lazy" onError={() => setKo(true)} />;
+}
+
+class TabError extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+  static getDerivedStateFromError(e) {
+    return { error: e };
+  }
+  componentDidCatch(e) {
+    console.error(e);
+  }
+  render() {
+    if (this.state.error) {
+      return <div className="banner">Esta vista fallo: {String((this.state.error && this.state.error.message) || this.state.error)}. Haz captura y pasamela.</div>;
+    }
+    return this.props.children;
+  }
+}
+
+function PitchRow({ label, slots, onPick, pickedId, photoOf }) {
   return (
     <div className="fila-campo">
       {slots.map((p, i) =>
         p ? (
           <button key={p.id} type="button" className={'jugador' + (pickedId === p.id ? ' elegido' : '')} onClick={() => onPick(p)} title="Toca para marcar el cambio">
+            <Avatar src={photoOf(p)} name={p.name} />
             <strong>{p.name}</strong>
             <span>{p.team}, {fmtM(p.price)}</span>
           </button>
@@ -525,15 +579,18 @@ function DiffBadge({ p }) {
   );
 }
 
-function TickerRow({ p, onToggleSquad }) {
+function TickerRow({ p, onToggleSquad, photoOf }) {
   const trend = trendOf(p);
   return (
     <div className="tick">
       <span className="dorsal">{p.position}</span>
       <div className="quien">
-        <strong>{p.name}</strong>
-        <span>{p.team || 'Sin equipo'}, {p.pointsTotal ?? 0} puntos, {ppm(p).toFixed(2)} por millon</span>
-        {p.inSquad && <span className="marca-equipo"> En tu equipo{p.isStarter ? ', titular' : ', banquillo'}</span>}
+        <Avatar src={photoOf(p)} name={p.name} />
+        <div className="txt">
+          <strong>{p.name}</strong>
+          <span>{p.team || 'Sin equipo'}, {p.pointsTotal ?? 0} puntos, {ppm(p).toFixed(2)} por millon</span>
+          {p.inSquad && <span className="marca-equipo"> En tu equipo{p.isStarter ? ', titular' : ', banquillo'}</span>}
+        </div>
       </div>
       <div className="numeros">
         <div className="p">{fmtM(p.price)}</div>

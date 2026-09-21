@@ -225,6 +225,7 @@ export async function syncMarketOnly(apiPlayers, weekLabel = '') {
       prevPrice: priceHistory.length >= 2 ? priceHistory[priceHistory.length - 2].price : (existing?.price ?? api.price),
       priceDiff: priceHistory.length >= 2 ? api.price - priceHistory[priceHistory.length - 2].price : 0,
       pointsTotal: api.pointsTotal,
+      photo: api.photo || null,
       inSquad: !!existing?.inSquad,
       isStarter: existing ? !!existing.isStarter : false,
       priceHistory,
@@ -232,21 +233,23 @@ export async function syncMarketOnly(apiPlayers, weekLabel = '') {
     };
   });
 
-  // Persiste SOLO tu equipo (los que ya tenías marcados)
+  // Persiste SOLO tu equipo (los que ya tenías marcados).
+  // La foto no se guarda: vive en memoria y cache, cero coste.
+  const stripPhoto = ({ photo, ...rest }) => rest;
   const squadUpdates = market.filter((m) => byExt.has(String(m.externalId)));
   if (!isCloud) {
     const list = readLS();
     const byId = new Map(list.map((p) => [p.id, p]));
     for (const m of squadUpdates) {
       const prev = byId.get(m.id) || {};
-      byId.set(m.id, { ...prev, ...m, inSquad: true, updatedAt: now });
+      byId.set(m.id, { ...prev, ...stripPhoto(m), inSquad: true, updatedAt: now });
     }
     writeLS([...byId.values()]);
   } else if (squadUpdates.length) {
     for (let i = 0; i < squadUpdates.length; i += 450) {
       const batch = writeBatch(db);
       for (const m of squadUpdates.slice(i, i + 450)) {
-        batch.set(doc(db, 'players', String(m.id)), { ...m, inSquad: true, updatedAt: serverTimestamp() }, { merge: true });
+        batch.set(doc(db, 'players', String(m.id)), { ...stripPhoto(m), inSquad: true, updatedAt: serverTimestamp() }, { merge: true });
       }
       await batch.commit();
     }

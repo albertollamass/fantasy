@@ -169,6 +169,24 @@ body {
 .mini:hover { border-color: var(--ambar); color: var(--ambar); filter: none; }
 .mini.elegido { border-color: var(--ambar); color: var(--ambar); }
 
+/* ---------- Avatares (hotlink CDN, cero Firestore) ---------- */
+
+.avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: none;
+  background: var(--cesped-2);
+  border: 1px solid var(--linea);
+}
+.hoja .avatar { border-color: var(--papel-linea); background: #e7e2cf; }
+.jugador .avatar { width: 46px; height: 46px; margin: 2px auto; }
+.mini .avatar { width: 40px; height: 40px; margin: 2px auto; }
+.quien { display: flex; gap: 10px; align-items: center; min-width: 0; }
+.quien .txt { min-width: 0; }
+.tick .quien strong, .row-liga .quien strong { display: block; }
+
 /* ---------- Popup de cambio ---------- */
 
 .popup-fondo {
@@ -439,7 +457,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   border: 1px solid var(--linea);
   border-radius: 8px;
   margin-bottom: 6px;
-  cursor: pointer;
   font-size: 14px;
   background: var(--cesped);
 }
@@ -475,10 +492,26 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 footer { margin: 24px 0; color: var(--tiza-faint); font-size: 13px; }
 
 @media (max-width: 640px) {
+  .app { padding: 12px 10px 32px; }
   .marca { font-size: 28px; }
+  .marcador-fila { flex-direction: column; align-items: stretch; }
+  .acciones { width: 100%; }
+  .acciones button { flex: 1; }
+  .cifras { gap: 14px; }
   .cifra strong { font-size: 26px; }
+  .campo { padding: 14px 10px; gap: 16px; }
+  .campo-head { flex-direction: column; align-items: stretch; }
+  .fila-campo { gap: 8px; }
+  .jugador, .hueco { flex: 1 1 44%; max-width: none; min-width: 0; padding: 10px 8px; }
+  .jugador strong { font-size: 13px; }
+  .jugador.elegido { padding: 9px 7px; }
+  .tick-mini { gap: 8px; }
+  .mini { padding: 8px 12px; }
+  .hoja { padding: 14px 12px 8px; }
+  .ficha { flex-direction: column; align-items: flex-start; gap: 2px; }
   .tick { grid-template-columns: 36px 1fr; }
   .tick .numeros { grid-column: 2; text-align: left; }
+  .tick-acciones { justify-content: flex-start; }
 }
 
 @media (prefers-reduced-motion: reduce) {

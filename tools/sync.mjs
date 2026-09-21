@@ -34,7 +34,8 @@ const players = list
     team: teamsById[p.teamId] || '',
     position: POS[p.positionId] || '?',
     price: Number(p.marketValue ?? 0),
-    pointsTotal: Number(p.points ?? 0)
+    pointsTotal: Number(p.points ?? 0),
+    photo: p.image || p.photoUrl || null
   }))
   .filter((p) => p.externalId && p.name && p.position !== '?');
 
