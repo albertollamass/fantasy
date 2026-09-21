@@ -4,7 +4,7 @@ import {
   syncMarketOnly, cleanupMarket, getCachedMarket, fetchMarketSnapshot,
   getFinance, saveFinance, getLineup, saveLineup,
   FORMATIONS, parseFormation,
-  exportForAI, fmtM, emptyPlayer, isCloud
+  exportForAI, exportMarketForAI, fmtM, emptyPlayer, isCloud
 } from './services/store';
 import { FantasyAPI } from './services/fantasyApi';
 import './styles.css';
@@ -118,6 +118,19 @@ export default function App() {
   const debtLimit = Math.floor(totalValue * 0.2);
   const buyingPower = (Number(finance.cash) || 0) + debtLimit;
   const cashNum = Number(finance.cash) || 0;
+
+  const photoByExt = useMemo(() => {
+    const map = {};
+    const grab = (list) => {
+      for (const p of list || []) {
+        if (p && p.externalId && p.photo) map[String(p.externalId)] = p.photo;
+      }
+    };
+    grab(market);
+    grab(players);
+    return map;
+  }, [market, players]);
+  const photoOf = (p) => (p && (p.photo || photoByExt[String(p.externalId)])) || null;
 
   const analysis = useMemo(() => {
     const withTrend = explore.map((p) => ({ p, trend: trendOf(p), ppm: ppm(p) }));
@@ -246,6 +259,16 @@ export default function App() {
     navigator.clipboard?.writeText(t).then(() => setMsg('Resumen copiado para tu IA')).catch(() => setMsg('Texto generado abajo, copialo a mano'));
   }
 
+  function copyMarketAI() {
+    const src = market.length ? market : players;
+    if (!src.length) { setMsg('No hay mercado: sincroniza primero.'); return; }
+    const t = exportMarketForAI(src, marketInfo?.week || '');
+    setAiText(t);
+    navigator.clipboard?.writeText(t).then(() => setMsg(`Mercado copiado: ${src.length} jugadores para tu IA`)).catch(() => setMsg('Texto generado abajo, copialo a mano'));
+  }
+
+
+
   return (
     <div className="app">
       <header className="marcador">
@@ -259,6 +282,7 @@ export default function App() {
           <div className="acciones">
             <button onClick={handleSync} disabled={syncing}>{syncing ? 'Sincronizando…' : 'Sincronizar mercado'}</button>
             <button className="ghost" onClick={copyAI}>Copiar equipo para IA</button>
+            <button className="ghost" onClick={copyMarketAI}>Copiar mercado para IA</button>
           </div>
         </div>
         <div className="cifras">
@@ -282,6 +306,7 @@ export default function App() {
           <button key={t.id} className={tab === t.id ? 'active' : ''} onClick={() => setTab(t.id)}>{t.label}</button>
         ))}
       </nav>
+      <TabError key={tab}>
 
       {tab === 'equipo' && (
         <>
@@ -301,10 +326,10 @@ export default function App() {
               </select>
             </div>
             <div className="campo">
-              <PitchRow label="DEL" slots={slotsFor('DEL', shape.del)} onPick={handleSwapClick} pickedId={swapPick} />
-              <PitchRow label="MED" slots={slotsFor('MED', shape.med)} onPick={handleSwapClick} pickedId={swapPick} />
-              <PitchRow label="DEF" slots={slotsFor('DEF', shape.def)} onPick={handleSwapClick} pickedId={swapPick} />
-              <PitchRow label="POR" slots={slotsFor('POR', 1)} onPick={handleSwapClick} pickedId={swapPick} />
+              <PitchRow label="DEL" slots={slotsFor('DEL', shape.del)} onPick={handleSwapClick} pickedId={swapPick} photoOf={photoOf} />
+              <PitchRow label="MED" slots={slotsFor('MED', shape.med)} onPick={handleSwapClick} pickedId={swapPick} photoOf={photoOf} />
+              <PitchRow label="DEF" slots={slotsFor('DEF', shape.def)} onPick={handleSwapClick} pickedId={swapPick} photoOf={photoOf} />
+              <PitchRow label="POR" slots={slotsFor('POR', 1)} onPick={handleSwapClick} pickedId={swapPick} photoOf={photoOf} />
             </div>
             <div className="banquillo">
               <h3>Banquillo</h3>
@@ -312,6 +337,7 @@ export default function App() {
                 {bench.length === 0 && <span className="aviso">Banquillo vacio.</span>}
                 {bench.map((p) => (
                   <button key={p.id} type="button" className={'mini' + (swapPick === p.id ? ' elegido' : '')} onClick={() => handleSwapClick(p)}>
+                    <Avatar src={photoOf(p)} name={p.name} />
                     <strong>{p.name} ({p.position})</strong>
                     <span>{p.pointsTotal ?? 0} pts, {fmtM(p.price)}</span>
                   </button>
@@ -329,10 +355,8 @@ export default function App() {
                   {line.map((p) => (
                     <div key={p.id}>
                       <div className="ficha">
-                        <span>
-                          <span className="nombre">{p.name}</span>
-                          <span className="equipo"> {p.team || ''}</span>
-                          <span className="rol">{p.isStarter ? 'Titular' : 'Banquillo'}</span>
+                        <span className="quien"><Avatar src={photoOf(p)} name={p.name} /><span className="txt"><span className="nombre">{p.name}</span> <span className="equipo"> {p.team || ''}</span>
+                          <span className="rol">{p.isStarter ? 'Titular' : 'Banquillo'}</span></span>
                         </span>
                         <span><DiffBadge p={p} /> <span className="precio">{fmtM(p.price)}</span></span>
                       </div>
@@ -380,7 +404,7 @@ export default function App() {
           <p className="aviso"><button className="ghost sm" onClick={handleCleanup}>Liberar Firestore, dejar solo mi equipo</button></p>
           <div className="ticker">
             {paged.map((p) => (
-              <TickerRow key={p.externalId || p.id} p={p} onToggleSquad={() => toggleSquad(p, 'inSquad')} />
+              <TickerRow key={p.externalId || p.id} p={p} onToggleSquad={() => toggleSquad(p, 'inSquad')} photoOf={photoOf} />
             ))}
           </div>
           <div className="pager">
@@ -414,6 +438,7 @@ export default function App() {
           </div>
         </section>
       )}
+      </TabError>
 
       {aiText && (
         <section>
@@ -435,6 +460,7 @@ export default function App() {
               )}
               {popupCandidates().map((c) => (
                 <button key={c.id} type="button" className="popup-opcion" onClick={() => handleSwapPick(c)}>
+                  <Avatar src={photoOf(c)} name={c.name} />
                   <strong>{c.name}</strong>
                   <span>{c.team}, {fmtM(c.price)}, {c.pointsTotal ?? 0} pts</span>
                 </button>
@@ -449,12 +475,38 @@ export default function App() {
   );
 }
 
-function PitchRow({ label, slots, onPick, pickedId }) {
+function Avatar({ src, name }) {
+  const [ko, setKo] = useState(false);
+  if (!src || ko) return null;
+  return <img className="avatar" src={src} alt={name} loading="lazy" onError={() => setKo(true)} />;
+}
+
+class TabError extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+  static getDerivedStateFromError(e) {
+    return { error: e };
+  }
+  componentDidCatch(e) {
+    console.error(e);
+  }
+  render() {
+    if (this.state.error) {
+      return <div className="banner">Esta vista fallo: {String((this.state.error && this.state.error.message) || this.state.error)}. Haz captura y pasamela.</div>;
+    }
+    return this.props.children;
+  }
+}
+
+function PitchRow({ label, slots, onPick, pickedId, photoOf }) {
   return (
     <div className="fila-campo">
       {slots.map((p, i) =>
         p ? (
           <button key={p.id} type="button" className={'jugador' + (pickedId === p.id ? ' elegido' : '')} onClick={() => onPick(p)} title="Toca para marcar el cambio">
+            <Avatar src={photoOf(p)} name={p.name} />
             <strong>{p.name}</strong>
             <span>{p.team}, {fmtM(p.price)}</span>
           </button>
@@ -477,15 +529,18 @@ function DiffBadge({ p }) {
   );
 }
 
-function TickerRow({ p, onToggleSquad }) {
+function TickerRow({ p, onToggleSquad, photoOf }) {
   const trend = trendOf(p);
   return (
     <div className="tick">
       <span className="dorsal">{p.position}</span>
       <div className="quien">
-        <strong>{p.name}</strong>
-        <span>{p.team || 'Sin equipo'}, {p.pointsTotal ?? 0} puntos, {ppm(p).toFixed(2)} por millon</span>
-        {p.inSquad && <span className="marca-equipo"> En tu equipo{p.isStarter ? ', titular' : ', banquillo'}</span>}
+        <Avatar src={photoOf(p)} name={p.name} />
+        <div className="txt">
+          <strong>{p.name}</strong>
+          <span>{p.team || 'Sin equipo'}, {p.pointsTotal ?? 0} puntos, {ppm(p).toFixed(2)} por millon</span>
+          {p.inSquad && <span className="marca-equipo"> En tu equipo{p.isStarter ? ', titular' : ', banquillo'}</span>}
+        </div>
       </div>
       <div className="numeros">
         <div className="p">{fmtM(p.price)}</div>

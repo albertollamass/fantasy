@@ -24,7 +24,7 @@ import {
 export const isCloud = hasFirebaseConfig && !!db;
 const LS_KEY = 'fantasy-players-v1';
 const LS_META = 'fantasy-meta-v1';
-const LS_MARKET = 'fantasy-market-cache-v1';
+const LS_MARKET = 'fantasy-market-cache-v2';
 const LS_FINANCE = 'fantasy-finance-v1';
 
 function today() {
@@ -225,6 +225,7 @@ export async function syncMarketOnly(apiPlayers, weekLabel = '') {
       prevPrice: priceHistory.length >= 2 ? priceHistory[priceHistory.length - 2].price : (existing?.price ?? api.price),
       priceDiff: priceHistory.length >= 2 ? api.price - priceHistory[priceHistory.length - 2].price : 0,
       pointsTotal: api.pointsTotal,
+      photo: api.photo || null,
       inSquad: !!existing?.inSquad,
       isStarter: existing ? !!existing.isStarter : false,
       priceHistory,
@@ -232,21 +233,23 @@ export async function syncMarketOnly(apiPlayers, weekLabel = '') {
     };
   });
 
-  // Persiste SOLO tu equipo (los que ya tenías marcados)
+  // Persiste SOLO tu equipo (los que ya tenías marcados).
+  // La foto no se guarda: vive en memoria y cache, cero coste.
+  const stripPhoto = ({ photo, ...rest }) => rest;
   const squadUpdates = market.filter((m) => byExt.has(String(m.externalId)));
   if (!isCloud) {
     const list = readLS();
     const byId = new Map(list.map((p) => [p.id, p]));
     for (const m of squadUpdates) {
       const prev = byId.get(m.id) || {};
-      byId.set(m.id, { ...prev, ...m, inSquad: true, updatedAt: now });
+      byId.set(m.id, { ...prev, ...stripPhoto(m), inSquad: true, updatedAt: now });
     }
     writeLS([...byId.values()]);
   } else if (squadUpdates.length) {
     for (let i = 0; i < squadUpdates.length; i += 450) {
       const batch = writeBatch(db);
       for (const m of squadUpdates.slice(i, i + 450)) {
-        batch.set(doc(db, 'players', String(m.id)), { ...m, inSquad: true, updatedAt: serverTimestamp() }, { merge: true });
+        batch.set(doc(db, 'players', String(m.id)), { ...stripPhoto(m), inSquad: true, updatedAt: serverTimestamp() }, { merge: true });
       }
       await batch.commit();
     }
@@ -331,6 +334,25 @@ export async function saveLineup({ formation }) {
   }
   await setDoc(doc(db, 'meta', 'lineup'), { formation: f, updatedAt: serverTimestamp() }, { merge: true });
   return { formation: f };
+}
+
+export function exportMarketForAI(market, weekLabel = '') {
+  const sorted = [...market].sort((a, b) => (b.price || 0) - (a.price || 0));
+  const line = (p) => {
+    const h = p.priceHistory || [];
+    const trend = h.length >= 2 ? h[h.length - 1].price - h[h.length - 2].price : (p.priceDiff || 0);
+    const prev = h.length >= 2 ? h[h.length - 2].price : (p.prevPrice ?? null);
+    const sign = trend > 0 ? `+${fmtM(trend)}` : `${fmtM(trend)}`;
+    const ppm = p.price > 0 ? (Number(p.pointsTotal || 0) / (p.price / 1_000_000)).toFixed(2) : '0.00';
+    const t = prev != null && trend !== 0 ? ` | tendencia ${sign} (antes ${fmtM(prev)})` : '';
+    return `- ${p.name} (${p.position}, ${p.team}) | ${fmtM(p.price)} | ${p.pointsTotal ?? 0} pts${t} | ${ppm} pts/M`;
+  };
+  return [
+    `MERCADO FANTASY DAZN (${sorted.length} jugadores${weekLabel ? `, jornada ${weekLabel}` : ''}) para analisis:`,
+    'Formato por linea: nombre (posicion, equipo) | precio | puntos totales | tendencia | puntos por millon.',
+    ...sorted.map(line),
+    'Dime: chollos por posicion, quien puede subir de precio y en quien no merece la pena gastar.'
+  ].join('\n');
 }
 
 export function exportForAI(players) {
