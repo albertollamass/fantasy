@@ -24,7 +24,7 @@ import {
 export const isCloud = hasFirebaseConfig && !!db;
 const LS_KEY = 'fantasy-players-v1';
 const LS_META = 'fantasy-meta-v1';
-const LS_MARKET = 'fantasy-market-cache-v1';
+const LS_MARKET = 'fantasy-market-cache-v2';
 const LS_FINANCE = 'fantasy-finance-v1';
 
 function today() {
@@ -352,17 +352,6 @@ export function exportMarketForAI(market, weekLabel = '') {
     'Formato por linea: nombre (posicion, equipo) | precio | puntos totales | tendencia | puntos por millon.',
     ...sorted.map(line),
     'Dime: chollos por posicion, quien puede subir de precio y en quien no merece la pena gastar.'
-  ].join('\n');
-}
-
-export function exportLeagueForAI(listings, leagueName = '') {
-  const sorted = [...listings].sort((a, b) => (b.price || 0) - (a.price || 0));
-  const line = (l) =>
-    `- ${l.name} (${l.position}) | ${fmtM(l.price)} | ${l.points ?? 0} pts | sale ${fmtM(l.salePrice)} | ${l.bids} pujas | vence ${l.expires || '?'} | vende ${l.seller}`;
-  return [
-    `MERCADO DE MI LIGA ${leagueName} (${sorted.length} lotes) para analisis:`,
-    ...sorted.map(line),
-    'Dime: por quien merece la pena pujar segun precio, pujas actuales, vencimiento y puntos.'
   ].join('\n');
 }
 

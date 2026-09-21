@@ -17,7 +17,8 @@ Node is managed with nvm. Prefix every npm/node command with:
 - `npm run sync && node tools/snapshot.mjs` (refresh `public/market.json`)
 
 ## Branches and deploys
-- Work on `develop`. Merge to `main` only to publish; `deploy.yml` deploys
+- Work on `develop`. Feature branches use `feat/<english-name>` (always
+  English). Merge to `main` only to publish; `deploy.yml` deploys
   solely from `main`.
 - `refresh-market.yml` regenerates `public/market.json` every Monday.
 - Never commit `.env` (gitignored). Secrets live in GitHub Actions secrets.
@@ -26,6 +27,11 @@ Node is managed with nvm. Prefix every npm/node command with:
 Every commit MUST use Conventional Commits, in English, lowercase subject,
 imperative mood: `feat:`, `fix:`, `chore:`, `ci:`, `docs:`, `refactor:`.
 Example: `feat: add swap popup filtered by line`.
+
+## Docs and code language
+- Docs, code comments and identifiers in English, even though the user
+  writes in Spanish. (`README.es.md` is the only Spanish doc.)
+- UI copy stays in Spanish (see below).
 
 ## Firestore free-tier budget
 - Persist ONLY the squad (`players` with `inSquad=true`) plus
@@ -41,7 +47,8 @@ Example: `feat: add swap popup filtered by line`.
 - Formations allowed: 5-4-1, 5-3-2, 4-5-1, 4-4-2, 4-3-3, 3-5-2, 3-4-3.
 
 ## League market (read-only by design)
-- `tools/league-auth.mjs` + `tools/league-market.mjs` only READ the private
+- The private league viewer lives parked in branch `feat/league-market`.
+  `tools/league-auth.mjs` + `tools/league-market.mjs` only READ the private
   league market. Never add bidding or any other write call (ban risk; this
   is a deliberate user decision, do not revisit unprompted).
 - League market JSON is pasted into the Mi liga tab (memory only). Never

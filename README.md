@@ -48,8 +48,5 @@ Live at `https://albertollamass.github.io/fantasy` (base `/fantasy/` in `vite.co
 `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID`
 - `refresh-market.yml`: every Monday it regenerates `public/market.json` and pushing it redeploys automatically.
 
-## League market (read-only)
-`node tools/league-auth.mjs` once (you log in in your own browser; the token stays in gitignored `tools/.tokens.json`), then `node tools/league-market.mjs [LEAGUE_ID]` dumps `tools/output-league-market.json`. Paste it into the Mi liga tab to view it and copy it for AI. Nothing is stored in Firestore and nothing ever bids: this repo stays read-only by design.
-
 ## License
 MIT — see [LICENSE](LICENSE). If you copy or fork this repo you must keep the copyright notice.
