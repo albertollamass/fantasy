@@ -4,7 +4,7 @@ import {
   syncMarketOnly, cleanupMarket, getCachedMarket, fetchMarketSnapshot,
   getFinance, saveFinance, getLineup, saveLineup,
   FORMATIONS, parseFormation,
-  exportForAI, fmtM, emptyPlayer, isCloud
+  exportForAI, exportMarketForAI, exportLeagueForAI, fmtM, emptyPlayer, isCloud
 } from './services/store';
 import { FantasyAPI } from './services/fantasyApi';
 import './styles.css';
@@ -14,7 +14,8 @@ const PAGE_SIZE = 48;
 const TABS = [
   { id: 'equipo', label: 'Mi equipo' },
   { id: 'mercado', label: 'Por posición' },
-  { id: 'analisis', label: 'Análisis subidas/bajadas' }
+  { id: 'analisis', label: 'Análisis subidas/bajadas' },
+  { id: 'liga', label: 'Mi liga' }
 ];
 
 function trendOf(p) {
@@ -54,6 +55,8 @@ export default function App() {
   const [popupFor, setPopupFor] = useState(null);
   const [msg, setMsg] = useState('');
   const [aiText, setAiText] = useState('');
+  const [leagueText, setLeagueText] = useState('');
+  const [league, setLeague] = useState(null);
 
   async function reload() {
     try {
@@ -246,6 +249,14 @@ export default function App() {
     navigator.clipboard?.writeText(t).then(() => setMsg('Resumen copiado para tu IA')).catch(() => setMsg('Texto generado abajo, copialo a mano'));
   }
 
+  function copyMarketAI() {
+    const src = market.length ? market : players;
+    if (!src.length) { setMsg('No hay mercado: sincroniza primero.'); return; }
+    const t = exportMarketForAI(src, marketInfo?.week || '');
+    setAiText(t);
+    navigator.clipboard?.writeText(t).then(() => setMsg(`Mercado copiado: ${src.length} jugadores para tu IA`)).catch(() => setMsg('Texto generado abajo, copialo a mano'));
+  }
+
   return (
     <div className="app">
       <header className="marcador">
@@ -259,6 +270,7 @@ export default function App() {
           <div className="acciones">
             <button onClick={handleSync} disabled={syncing}>{syncing ? 'Sincronizando…' : 'Sincronizar mercado'}</button>
             <button className="ghost" onClick={copyAI}>Copiar equipo para IA</button>
+            <button className="ghost" onClick={copyMarketAI}>Copiar mercado para IA</button>
           </div>
         </div>
         <div className="cifras">
@@ -323,7 +335,24 @@ export default function App() {
             <h2>Mi equipo completo</h2>
             {POSITIONS.map((pos) => {
               const line = [...starters.filter((p) => p.position === pos), ...bench.filter((p) => p.position === pos)];
-              return (
+  function copyLeagueAI() {
+    if (!league?.listings?.length) { setMsg('Pega primero el mercado de tu liga.'); return; }
+    const t = exportLeagueForAI(league.listings, league.leagueName);
+    setAiText(t);
+    navigator.clipboard?.writeText(t).then(() => setMsg(`Mercado de liga copiado: ${league.listings.length} lotes`)).catch(() => setMsg('Texto generado abajo, copialo a mano'));
+  }
+
+  function loadLeague() {
+    try {
+      const data = JSON.parse(leagueText);
+      const listings = Array.isArray(data) ? data : data.listings || [];
+      if (!listings.length) { setMsg('JSON vacio o sin lotes.'); return; }
+      setLeague({ leagueName: data.leagueName || '', updatedAt: data.updatedAt || '', listings });
+      setMsg(`Mercado de liga cargado: ${listings.length} lotes. Solo en memoria: nada va a Firestore y nada puja.`);
+    } catch (e) { setMsg('JSON invalido: ' + e.message); }
+  }
+
+  return (
                 <div key={pos} className="linea">
                   <h3>{pos}</h3>
                   {line.map((p) => (
@@ -412,6 +441,25 @@ export default function App() {
               <Row key={p.externalId || p.id} p={p} trend={null} extra={`${v.toFixed(2)} pts por millon`} />
             ))}
           </div>
+        </section>
+      )}
+
+      {tab === 'liga' && (
+        <section>
+          <h3>Mercado de mi liga (solo lectura)</h3>
+          <p className="aviso">Generalo en tu PC: node tools/league-auth.mjs una vez, luego node tools/league-market.mjs. Pega aqui el contenido de tools/output-league-market.json.</p>
+          <textarea rows={5} style={{ width: '100%' }} value={leagueText} onChange={(e) => setLeagueText(e.target.value)} placeholder="Pega aqui el JSON del mercado de tu liga" />
+          <div className="form-actions">
+            <button type="button" onClick={loadLeague}>Ver mercado</button>
+            <button type="button" className="ghost" onClick={copyLeagueAI}>Copiar mercado de liga para IA</button>
+          </div>
+          {league && <p className="aviso">{league.leagueName} · {league.listings.length} lotes · {String(league.updatedAt).slice(0, 16).replace('T', ' ')}</p>}
+          {league && league.listings.map((l) => (
+            <div key={l.marketId} className="row">
+              <span><strong>{l.name}</strong> <span className="muted">({l.position}, vende {l.seller})</span></span>
+              <span>{fmtM(l.price)} · {l.bids} pujas · {String(l.expires).slice(5, 16).replace('T', ' ')}</span>
+            </div>
+          ))}
         </section>
       )}
 

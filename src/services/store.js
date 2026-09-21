@@ -333,6 +333,36 @@ export async function saveLineup({ formation }) {
   return { formation: f };
 }
 
+export function exportMarketForAI(market, weekLabel = '') {
+  const sorted = [...market].sort((a, b) => (b.price || 0) - (a.price || 0));
+  const line = (p) => {
+    const h = p.priceHistory || [];
+    const trend = h.length >= 2 ? h[h.length - 1].price - h[h.length - 2].price : (p.priceDiff || 0);
+    const prev = h.length >= 2 ? h[h.length - 2].price : (p.prevPrice ?? null);
+    const sign = trend > 0 ? `+${fmtM(trend)}` : `${fmtM(trend)}`;
+    const ppm = p.price > 0 ? (Number(p.pointsTotal || 0) / (p.price / 1_000_000)).toFixed(2) : '0.00';
+    const t = prev != null && trend !== 0 ? ` | tendencia ${sign} (antes ${fmtM(prev)})` : '';
+    return `- ${p.name} (${p.position}, ${p.team}) | ${fmtM(p.price)} | ${p.pointsTotal ?? 0} pts${t} | ${ppm} pts/M`;
+  };
+  return [
+    `MERCADO FANTASY DAZN (${sorted.length} jugadores${weekLabel ? `, jornada ${weekLabel}` : ''}) para analisis:`,
+    'Formato por linea: nombre (posicion, equipo) | precio | puntos totales | tendencia | puntos por millon.',
+    ...sorted.map(line),
+    'Dime: chollos por posicion, quien puede subir de precio y en quien no merece la pena gastar.'
+  ].join('\n');
+}
+
+export function exportLeagueForAI(listings, leagueName = '') {
+  const sorted = [...listings].sort((a, b) => (b.price || 0) - (a.price || 0));
+  const line = (l) =>
+    `- ${l.name} (${l.position}) | ${fmtM(l.price)} | ${l.points ?? 0} pts | sale ${fmtM(l.salePrice)} | ${l.bids} pujas | vence ${l.expires || '?'} | vende ${l.seller}`;
+  return [
+    `MERCADO DE MI LIGA ${leagueName} (${sorted.length} lotes) para analisis:`,
+    ...sorted.map(line),
+    'Dime: por quien merece la pena pujar segun precio, pujas actuales, vencimiento y puntos.'
+  ].join('\n');
+}
+
 export function exportForAI(players) {
   const inSquad = players.filter((p) => p.inSquad);
   const starters = inSquad.filter((p) => p.isStarter);

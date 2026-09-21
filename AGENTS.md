@@ -40,6 +40,13 @@ Example: `feat: add swap popup filtered by line`.
   for it; compute it. Negative balance means no points that matchday.
 - Formations allowed: 5-4-1, 5-3-2, 4-5-1, 4-4-2, 4-3-3, 3-5-2, 3-4-3.
 
+## League market (read-only by design)
+- `tools/league-auth.mjs` + `tools/league-market.mjs` only READ the private
+  league market. Never add bidding or any other write call (ban risk; this
+  is a deliberate user decision, do not revisit unprompted).
+- League market JSON is pasted into the Mi liga tab (memory only). Never
+  persist it to Firestore.
+
 ## UI language and identity
 - UI copy in Spanish, sentence case, no emojis as icons.
 - Visual identity "noche de partido": pine/green background, chalk text,

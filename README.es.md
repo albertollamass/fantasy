@@ -50,5 +50,8 @@ La web vive en `https://albertollamass.github.io/fantasy` (base `/fantasy/` en `
 `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID`
 - `refresh-market.yml`: cada lunes regenera `public/market.json` y al hacer push redespliega solo.
 
+## Mercado de mi liga (solo lectura)
+`node tools/league-auth.mjs` una vez (te logueas en tu navegador; el token queda en `tools/.tokens.json`, gitignored), luego `node tools/league-market.mjs [LEAGUE_ID]` genera `tools/output-league-market.json`. Pégalo en la pestaña Mi liga para verlo y copiarlo para la IA. Nada se guarda en Firestore y nada puja nunca: este repo es de solo lectura por decisión propia.
+
 ## Licencia
 MIT — ver [LICENSE](LICENSE). Si copias o bifurcas este repo debes conservar el aviso de copyright.
