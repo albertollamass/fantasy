@@ -39,7 +39,7 @@ npm run dev
 
 ## CI/CD GitHub Actions → GitHub Pages
 La web vive en `https://albertollamass.github.io/fantasy` (base `/fantasy/` en `vite.config.js`).
-- Workflow `deploy.yml`: push a `master` (o manual) → build → Pages. Antes, activa en GitHub → Settings → Pages → Source: **GitHub Actions**.
+- Workflow `deploy.yml`: solo despliega con push o merge a `main`. Se trabaja en `develop` y al fusionar a `main` sale a Pages. Antes, activa en GitHub → Settings → Pages → Source: **GitHub Actions**.
 - Secrets (Settings → Secrets → Actions) con tu config de Firebase para que la web use Firestore; sin ellos compila igual en modo local:
 `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID`
 - Workflow `refresh-market.yml`: cada lunes regenera `public/market.json` (foto del mercado para Pages, donde el navegador no puede llamar a la API por CORS) y al hacer push redespliega solo.
