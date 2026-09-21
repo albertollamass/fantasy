@@ -1,0 +1,33 @@
+name: Refresh market snapshot
+
+# The browser cannot call the official API from GitHub Pages (CORS),
+# so this refreshes public/market.json every Monday and redeploys.
+# Run it manually anytime from Actions > Refresh market snapshot > Run workflow.
+
+on:
+  schedule:
+    - cron: '0 7 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: node tools/sync.mjs
+      - run: node tools/snapshot.mjs
+
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add public/market.json
+          git diff --cached --quiet || git commit -m "chore: refresh market snapshot"
+          git push
