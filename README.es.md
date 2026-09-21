@@ -46,6 +46,7 @@ npm run sync && node tools/snapshot.mjs  # refresca public/market.json
 ## CI/CD: GitHub Actions → GitHub Pages
 La web vive en `https://albertollamass.github.io/fantasy` (base `/fantasy/` en `vite.config.js`).
 - `deploy.yml`: solo despliega con push o merge a `main`. Se trabaja en `develop` y al fusionar a `main` sale a Pages. Antes, activa en GitHub → Settings → Pages → Source: **GitHub Actions**.
+- Vista previa manual: Actions → Deploy to GitHub Pages → Run workflow → elige `develop` para probar features en vivo, o `main` para volver a la release. La previa queda hasta el siguiente despliegue.
 - Secrets (Settings → Secrets → Actions) con tu config de Firebase para que la web use Firestore; sin ellos compila igual en modo local:
 `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID`
 - `refresh-market.yml`: cada lunes regenera `public/market.json` y al hacer push redespliega solo.

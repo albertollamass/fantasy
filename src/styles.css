@@ -119,6 +119,17 @@ body {
   gap: 22px;
 }
 .fila-campo { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.linea-campo { display: grid; gap: 6px; }
+.linea-tag {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--tiza);
+  opacity: 0.75;
+  text-align: center;
+}
+.fila-campo.unico .jugador, .fila-campo.unico .hueco { flex: 0 1 280px; }
 .jugador {
   background: var(--pino-2);
   color: var(--tiza);

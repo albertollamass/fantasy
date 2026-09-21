@@ -502,7 +502,9 @@ class TabError extends React.Component {
 
 function PitchRow({ label, slots, onPick, pickedId, photoOf }) {
   return (
-    <div className="fila-campo">
+    <div className="linea-campo">
+      <span className="linea-tag">{label}</span>
+      <div className={'fila-campo' + (slots.length === 1 ? ' unico' : '')}>
       {slots.map((p, i) =>
         p ? (
           <button key={p.id} type="button" className={'jugador' + (pickedId === p.id ? ' elegido' : '')} onClick={() => onPick(p)} title="Toca para marcar el cambio">
@@ -514,6 +516,7 @@ function PitchRow({ label, slots, onPick, pickedId, photoOf }) {
           <span key={'hueco-' + label + '-' + i} className="hueco">Falta jugador ({label})</span>
         )
       )}
+      </div>
     </div>
   );
 }

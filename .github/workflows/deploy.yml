@@ -4,6 +4,13 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Branch to deploy (preview develop, release main)'
+        required: true
+        default: develop
+        type: choice
+        options: [develop, main]
 
 permissions:
   contents: read
@@ -19,6 +26,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Manual run deploys the chosen branch; push deploys the pushed ref.
+          ref: ${{ inputs.ref || github.ref_name }}
 
       - uses: actions/setup-node@v4
         with:

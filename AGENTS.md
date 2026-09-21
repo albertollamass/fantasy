@@ -19,7 +19,9 @@ Node is managed with nvm. Prefix every npm/node command with:
 ## Branches and deploys
 - Work on `develop`. Feature branches use `feat/<english-name>` (always
   English). Merge to `main` only to publish; `deploy.yml` deploys
-  solely from `main`.
+  automatically from `main`.
+- Manual preview: Actions > Deploy to GitHub Pages > Run workflow >
+  choose `develop`. It stays live until the next `main` deploy.
 - `refresh-market.yml` regenerates `public/market.json` every Monday.
 - Never commit `.env` (gitignored). Secrets live in GitHub Actions secrets.
 
